@@ -103,6 +103,46 @@ class TestProcesador(unittest.TestCase):
         self.assertEqual(res.registros[0]["SONG_TITLE"], "Canción Ñandú")
 
 
+class TestFilasSobrantes(unittest.TestCase):
+    def test_filas_vacias_al_final_y_en_medio(self):
+        vacia = ";" * (len(FIELDS) - 1)
+        datos = csv_bytes(fila(SONG_CODE="V1", COPYRIGHT_SHARE="100", **BASE), vacia, "  ;  ; ",
+                          fila(SONG_CODE="V2", COPYRIGHT_SHARE="100", **BASE), vacia, vacia, "", "")
+        res = procesar("x.csv", datos)
+        self.assertEqual(res.errores, [])
+        self.assertEqual([r["SONG_CODE"] for r in res.registros], ["V1", "V2"])
+        txt = generar_csv(res.registros).decode("utf-8-sig")
+        self.assertEqual(txt.count("\r\n"), 3)              # encabezado + 2 filas, nada más
+        self.assertFalse(txt.endswith("\r\n\r\n"))
+
+    def test_titulo_arriba_y_columnas_extra(self):
+        cab = CAB + ";NOTAS INTERNAS"
+        datos = ("REPORTE DE OBRAS\r\n\r\n" + cab + "\r\n" +
+                 fila(SONG_CODE="V3", COPYRIGHT_SHARE="100", **BASE) + ";nota\r\n").encode("utf-8")
+        res = procesar("x.csv", datos)
+        self.assertEqual(res.errores, [])
+        self.assertEqual(len(res.registros), 1)
+        linea = generar_csv(res.registros).decode("utf-8-sig").split("\r\n")[1]
+        self.assertEqual(len(linea.split(",")), len(FIELDS))
+        self.assertNotIn("nota", linea)
+
+    def test_fila_que_no_es_obra_se_bloquea(self):
+        datos = csv_bytes(fila(SONG_CODE="V4", COPYRIGHT_SHARE="100", **BASE), "TOTAL;;;;;;;;;;;;;100")
+        res = procesar("x.csv", datos)
+        self.assertTrue(any(e["fila"] == 3 for e in res.errores))
+
+    def test_filas_de_ejemplo_de_la_plantilla_se_ignoran(self):
+        import io, openpyxl
+        wb = openpyxl.load_workbook(io.BytesIO(generar_plantilla({"nombre": "MI EDITORIAL"})))
+        ws = wb["SWI"]
+        for c, v in enumerate([fila(SONG_CODE="V5", COPYRIGHT_SHARE="100", **BASE).split(";")][0], start=1):
+            ws.cell(row=4, column=c, value=v or None)
+        buf = io.BytesIO(); wb.save(buf)
+        res = procesar("mio.xlsx", buf.getvalue())
+        self.assertEqual(res.errores, [])
+        self.assertEqual([r["SONG_CODE"] for r in res.registros], ["V5"])
+
+
 class TestFormatos(unittest.TestCase):
     def setUp(self):
         self.res = procesar("x.csv", csv_bytes(
@@ -134,8 +174,18 @@ class TestFormatos(unittest.TestCase):
 
 
 class TestPlantilla(unittest.TestCase):
-    def test_la_plantilla_de_ejemplo_pasa(self):
-        res = procesar("Plantilla SWI.xlsx", generar_plantilla({"nombre": "MI EDITORIAL", "territorio": "CO"}))
+    def test_plantilla_sin_llenar_no_genera_nada(self):
+        res = procesar("Plantilla SWI.xlsx", generar_plantilla({"nombre": "MI EDITORIAL"}))
+        self.assertEqual(res.registros, [])
+        self.assertTrue(any("no tiene obras" in e["msg"] for e in res.errores))
+
+    def test_el_ejemplo_de_la_plantilla_es_valido(self):
+        import io, openpyxl
+        wb = openpyxl.load_workbook(io.BytesIO(generar_plantilla({"nombre": "MI EDITORIAL", "territorio": "CO"})))
+        for fila_ in (2, 3):
+            wb["SWI"].cell(row=fila_, column=1, value="EJ0002")   # que no se ignore como ejemplo
+        buf = io.BytesIO(); wb.save(buf)
+        res = procesar("Plantilla SWI.xlsx", buf.getvalue())
         self.assertEqual(res.errores, [], res.errores)
         self.assertEqual(len(res.registros), 2)
         self.assertEqual(res.registros[0]["ROLE"], "CA")

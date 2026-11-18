@@ -10,6 +10,8 @@ from decimal import Decimal, InvalidOperation
 from .tablas import (FIELDS, SIZE, PCT, ADM_FIELDS, SOC_FIELDS, PUB_UNK, WRI_UNK, ROLES,
                      SOCIEDADES, PAISES, TERRITORIOS, SOC_POR_NOMBRE, TERR_POR_NOMBRE)
 
+EJEMPLO_CODE = "EJ0001"               # filas de ejemplo que trae la plantilla
+EJEMPLO_TITULO = "CANCION DE EJEMPLO"
 CIEN = Decimal("100.00")
 CERO = Decimal("0.00")
 
@@ -169,6 +171,9 @@ def construir(filas, res):
             except ValueError as e:
                 res.err(n, f, str(e))
                 r[f] = None if f in PCT else v
+        if r["SONG_CODE"].upper() == EJEMPLO_CODE and r["SONG_TITLE"].upper() == EJEMPLO_TITULO:
+            res.corr(n, None, "Fila de ejemplo de la plantilla: se ignoró")
+            continue
         if r["WRITER_LAST_NAME"].upper() == WRI_UNK:
             r["WRITER_LAST_NAME"] = WRI_UNK
         if r["ORI_PUBLISHER_NAME"].upper() == PUB_UNK:
@@ -367,6 +372,9 @@ def procesar(nombre, contenido, cfg=None, completar_100=True):
         return res
     construir(filas, res)
     if res.errores:
+        return res
+    if not res.registros:
+        res.err(None, None, "El archivo no tiene obras (solo encabezado, filas vacías o las filas de ejemplo)")
         return res
     aplicar_mi_editorial(res, cfg or {})
     corregir(res, completar_100=completar_100)
