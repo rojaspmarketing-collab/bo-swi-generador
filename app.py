@@ -33,6 +33,7 @@ CONFIG = os.path.join(BASE, "config.json")
 PLANTILLA_OFICIAL = os.path.join(BASE, "plantillas", "SWI_oficial.mdb")
 PUERTO = 8765
 MAX_SUBIDA = 30 * 1024 * 1024
+NOMBRE_REPORTE = "_REVISION (no subir a BO).log"
 
 TRABAJOS = {}
 
@@ -112,13 +113,16 @@ def procesar_subida(nombre, contenido, opciones):
     reporte += [f"  Fila {c['fila']} {c['campo'] or ''}: {c['msg']}" for c in res.correcciones] or ["  (ninguna)"]
     reporte += ["", "AVISOS:"]
     reporte += [f"  Fila {a['fila']} {a['campo'] or ''}: {a['msg']}" for a in res.avisos] or ["  (ninguno)"]
-    archivos["reporte.txt"] = "\r\n".join(reporte).encode("utf-8-sig")
+    # el reporte se guarda aparte y con un nombre que no se confunda con el TXT del SWI
+    reporte_bytes = "\r\n".join(reporte).encode("utf-8-sig")
 
     carpeta = os.path.join(SALIDA, f"{datetime.now():%Y-%m-%d_%H%M%S} {base}")
     os.makedirs(carpeta, exist_ok=True)
     for n, datos in archivos.items():
         with open(os.path.join(carpeta, n), "wb") as fh:
             fh.write(datos)
+    with open(os.path.join(carpeta, NOMBRE_REPORTE), "wb") as fh:
+        fh.write(reporte_bytes)
     job = uuid.uuid4().hex[:12]
     TRABAJOS[job] = {"carpeta": carpeta, "archivos": archivos, "base": base}
     salida.update({
