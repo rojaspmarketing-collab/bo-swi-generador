@@ -165,7 +165,18 @@ class TestFormatos(unittest.TestCase):
         txt = generar_csv(self.res.registros).decode("utf-8-sig")
         self.assertTrue(txt.startswith("SONG_CODE,ISWC,"))
         self.assertIn(",33.33,", txt)
+        self.assertIn(",66.67,", txt)          # WRITER UNKNOWN agregado
+        self.assertIn(",16.67,", txt)
         self.assertNotIn("%", txt)
+
+    def test_csv_siempre_dos_decimales(self):
+        res = procesar("x.csv", csv_bytes(fila(SONG_CODE="D1", COPYRIGHT_SHARE="50", ADM_PUBLISHER_NAME="MI EDITORIAL",
+                                               ADM_PR_COLLECT="25", ADM_MR_COLLECT="0", ADM_TERRITORY_CODE="CO", **BASE)))
+        linea = generar_csv(res.registros).decode("utf-8-sig").split("\r\n")[1].split(",")
+        from swi.tablas import FIELDS as F
+        self.assertEqual(linea[F.index("COPYRIGHT_SHARE")], "50.00")
+        self.assertEqual(linea[F.index("ADM_PR_COLLECT")], "25.00")
+        self.assertEqual(linea[F.index("ADM_MR_COLLECT")], "0.00")
 
     @unittest.skipUnless(os.name == "nt", "MDB solo en Windows")
     def test_mdb(self):

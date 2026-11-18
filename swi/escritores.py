@@ -11,8 +11,13 @@ from .tablas import LAYOUT, FIELDS, PCT, TXT_LINE_LEN
 from .procesador import fmt_pct
 
 
+def _pct_csv(d):
+    """Siempre 2 decimales con punto, como la guia ('100.00'). Nunca coma: chocaria con el separador."""
+    return "" if d is None else f"{d:.2f}"
+
+
 def _fila_texto(r):
-    return [fmt_pct(r[f]) if f in PCT else (r[f] or "") for f in FIELDS]
+    return [_pct_csv(r[f]) if f in PCT else (r[f] or "") for f in FIELDS]
 
 
 def generar_csv(registros):
