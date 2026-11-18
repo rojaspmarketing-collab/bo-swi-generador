@@ -21,13 +21,17 @@ def _fila_texto(r):
 
 
 def generar_csv(registros):
-    """CSV UTF-8 (delimitado por comas), igual que 'CSV UTF-8' de Excel: con BOM y CRLF."""
+    """
+    CSV UTF-8 (delimitado por comas) con BOM y CRLF, como 'CSV UTF-8' de Excel.
+    El archivo termina justo en la ultima obra, SIN salto de linea final: asi ningun lector
+    puede interpretar un renglon vacio al final (que BO reportaria como error de copyright).
+    """
     buf = io.StringIO()
     w = csv.writer(buf, delimiter=",", lineterminator="\r\n", quoting=csv.QUOTE_MINIMAL)
     w.writerow(FIELDS)
     for r in registros:
         w.writerow(_fila_texto(r))
-    return buf.getvalue().encode("utf-8-sig")
+    return buf.getvalue().rstrip("\r\n").encode("utf-8-sig")
 
 
 def generar_txt(registros):
@@ -44,7 +48,7 @@ def generar_txt(registros):
         linea = "".join(partes)
         assert len(linea) == TXT_LINE_LEN, len(linea)
         lineas.append(linea)
-    return ("\r\n".join(lineas) + "\r\n").encode("cp1252")
+    return "\r\n".join(lineas).encode("cp1252")   # sin salto final: ningun renglon vacio
 
 
 _PS_MDB = r'''
@@ -64,7 +68,7 @@ $filas = Import-Csv -Path $Csv -Encoding UTF8
 foreach ($f in $filas) {
     $nombres = @(); $valores = @()
     foreach ($p in $f.PSObject.Properties) {
-        if ($p.Value -eq "") { continue }
+        if ([string]::IsNullOrEmpty($p.Value)) { continue }
         $nombres += "[" + $p.Name + "]"
         if ($pctCols -contains $p.Name) {
             if ($p.Value -notmatch '^\d+(\.\d+)?$') { throw "Numero invalido en $($p.Name): $($p.Value)" }

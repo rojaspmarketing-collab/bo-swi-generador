@@ -112,8 +112,16 @@ class TestFilasSobrantes(unittest.TestCase):
         self.assertEqual(res.errores, [])
         self.assertEqual([r["SONG_CODE"] for r in res.registros], ["V1", "V2"])
         txt = generar_csv(res.registros).decode("utf-8-sig")
-        self.assertEqual(txt.count("\r\n"), 3)              # encabezado + 2 filas, nada más
-        self.assertFalse(txt.endswith("\r\n\r\n"))
+        renglones = txt.split("\r\n")
+        self.assertEqual(len(renglones), 3)                  # encabezado + 2 filas, nada más
+        self.assertTrue(all(r.strip(",") for r in renglones))  # ningún renglón vacío
+        self.assertFalse(txt.endswith("\n"))                  # no termina en salto de línea
+
+    def test_txt_sin_renglon_vacio_al_final(self):
+        res = procesar("x.csv", csv_bytes(fila(SONG_CODE="V6", COPYRIGHT_SHARE="100", **BASE), ";;;;", ""))
+        lineas = generar_txt(res.registros).decode("cp1252").split("\r\n")
+        self.assertEqual(len(lineas), 1)
+        self.assertEqual(len(lineas[0]), TXT_LINE_LEN)
 
     def test_titulo_arriba_y_columnas_extra(self):
         cab = CAB + ";NOTAS INTERNAS"
@@ -151,7 +159,7 @@ class TestFormatos(unittest.TestCase):
         self.assertEqual(self.res.errores, [])
 
     def test_txt(self):
-        lineas = generar_txt(self.res.registros).decode("cp1252").split("\r\n")[:-1]
+        lineas = generar_txt(self.res.registros).decode("cp1252").split("\r\n")
         self.assertEqual(len(lineas), 2)
         for l in lineas:
             self.assertEqual(len(l), TXT_LINE_LEN)
