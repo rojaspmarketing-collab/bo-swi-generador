@@ -1,0 +1,12 @@
+# resultados y datos reales: nunca al repo
+salida/
+config.json
+plantillas/*.mdb
+*.xlsx
+*.xls
+*.csv
+!tests/datos/*.csv
+
+__pycache__/
+*.pyc
+.venv/

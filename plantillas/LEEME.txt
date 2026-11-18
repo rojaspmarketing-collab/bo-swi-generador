@@ -1,0 +1,7 @@
+Si descargas la plantilla MDB oficial desde la Intranet de BackOffice,
+guardala en esta carpeta con el nombre:
+
+    SWI_oficial.mdb
+
+El programa la usara automaticamente para generar el archivo Access
+(copia la plantilla y llena la tabla SWI), en vez de crear una tabla nueva.

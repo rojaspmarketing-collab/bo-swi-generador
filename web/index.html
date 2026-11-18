@@ -1,0 +1,364 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BO SWI Generador</title>
+<style>
+:root{
+  --bg:#f6f5f2; --panel:#ffffff; --panel-2:#faf9f7; --ink:#1d1d1f; --ink-2:#5b5b60; --ink-3:#8a8a90;
+  --line:#e6e3dd; --brand:#e8492a; --brand-ink:#ffffff; --brand-soft:#fdece7;
+  --ok:#1f8a4c; --ok-soft:#e5f4ea; --err:#c62f2f; --err-soft:#fbe9e9; --warn:#a86a00; --warn-soft:#fdf3dc;
+  --info:#2c62c9; --info-soft:#e8eefb; --shadow:0 1px 2px rgba(0,0,0,.04),0 8px 24px rgba(0,0,0,.06);
+  --r:14px;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#141415; --panel:#1d1d1f; --panel-2:#232326; --ink:#f2f2f3; --ink-2:#b4b4ba; --ink-3:#85858c;
+    --line:#2f2f33; --brand:#ff6a4a; --brand-ink:#1a0b07; --brand-soft:#3a1f19;
+    --ok:#4cc27e; --ok-soft:#173323; --err:#ff6b6b; --err-soft:#3a1d1d; --warn:#f0b13d; --warn-soft:#3a2e14;
+    --info:#7aa5ff; --info-soft:#1c2740; --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.35);
+  }
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 "Segoe UI",system-ui,-apple-system,Roboto,sans-serif}
+button,input,select{font:inherit;color:inherit}
+.wrap{max-width:1080px;margin:0 auto;padding:0 20px 60px}
+header{display:flex;align-items:center;gap:14px;padding:22px 0 18px}
+.logo{width:40px;height:40px;border-radius:10px;background:var(--brand);display:grid;place-items:center;color:var(--brand-ink);font-weight:800;letter-spacing:-.5px}
+header h1{font-size:19px;margin:0;line-height:1.1}
+header small{color:var(--ink-3);font-size:12.5px}
+header .sp{flex:1}
+.btn{border:1px solid var(--line);background:var(--panel);padding:8px 14px;border-radius:10px;cursor:pointer;display:inline-flex;align-items:center;gap:8px;transition:.15s;text-decoration:none;color:var(--ink)}
+.btn:hover{border-color:var(--ink-3)}
+.btn.primary{background:var(--brand);border-color:var(--brand);color:var(--brand-ink);font-weight:600}
+.btn.primary:hover{filter:brightness(1.05)}
+.btn.ghost{background:transparent}
+.btn svg{width:17px;height:17px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow)}
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px}
+.step{padding:14px 16px;display:flex;gap:12px;align-items:flex-start}
+.step b{display:grid;place-items:center;min-width:26px;height:26px;border-radius:50%;background:var(--brand-soft);color:var(--brand);font-size:13px}
+.step p{margin:0;font-size:13.5px;color:var(--ink-2)}
+.step p strong{color:var(--ink);display:block;font-size:14px}
+.step a{color:var(--brand);cursor:pointer;font-weight:600;text-decoration:none}
+#drop{padding:46px 20px;text-align:center;border:2px dashed var(--line);border-radius:var(--r);background:var(--panel);cursor:pointer;transition:.15s;position:relative}
+#drop:hover,#drop.over{border-color:var(--brand);background:var(--brand-soft)}
+#drop .ico{width:56px;height:56px;margin:0 auto 10px;border-radius:16px;background:var(--brand-soft);color:var(--brand);display:grid;place-items:center}
+#drop.over .ico{background:var(--panel)}
+#drop h2{margin:0 0 4px;font-size:20px}
+#drop p{margin:0;color:var(--ink-2)}
+#drop .fmt{margin-top:10px;font-size:12.5px;color:var(--ink-3)}
+.opts{display:flex;gap:18px;flex-wrap:wrap;align-items:center;margin:12px 4px 0;color:var(--ink-2);font-size:13.5px}
+.switch{display:inline-flex;align-items:center;gap:10px;cursor:pointer;user-select:none}
+.switch input{display:none}
+.switch i{width:36px;height:20px;border-radius:20px;background:var(--line);position:relative;transition:.15s;flex:none}
+.switch i:after{content:"";position:absolute;left:2px;top:2px;width:16px;height:16px;border-radius:50%;background:#fff;transition:.15s;box-shadow:0 1px 2px rgba(0,0,0,.3)}
+.switch input:checked+i{background:var(--brand)}
+.switch input:checked+i:after{left:18px}
+#busy{display:none;padding:40px;text-align:center;color:var(--ink-2)}
+.spin{width:34px;height:34px;border:3px solid var(--line);border-top-color:var(--brand);border-radius:50%;animation:s 0.8s linear infinite;margin:0 auto 12px}
+@keyframes s{to{transform:rotate(360deg)}}
+#res{display:none;margin-top:18px}
+.banner{display:flex;gap:14px;align-items:center;padding:18px 20px;border-radius:var(--r);margin-bottom:14px}
+.banner.ok{background:var(--ok-soft);color:var(--ok)}
+.banner.bad{background:var(--err-soft);color:var(--err)}
+.banner .big{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;background:currentColor;flex:none}
+.banner .big svg{color:var(--panel);width:22px;height:22px}
+.banner h3{margin:0;font-size:17px}
+.banner p{margin:2px 0 0;color:var(--ink-2);font-size:13.5px}
+.banner .sp{flex:1}
+.stats{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:14px}
+.stat{padding:12px 14px}
+.stat span{display:block;font-size:12px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.04em}
+.stat strong{font-size:24px;font-variant-numeric:tabular-nums}
+.stat.e strong{color:var(--err)} .stat.w strong{color:var(--warn)} .stat.c strong{color:var(--info)}
+.dl{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:12px}
+.file{padding:16px;display:flex;flex-direction:column;gap:8px;position:relative}
+.file .ext{font-weight:800;font-size:13px;width:44px;height:44px;border-radius:10px;display:grid;place-items:center;color:#fff}
+.file h4{margin:0;font-size:15px}
+.file p{margin:0;color:var(--ink-2);font-size:12.5px;flex:1}
+.file .tag{position:absolute;top:14px;right:14px;font-size:11px;background:var(--brand-soft);color:var(--brand);padding:2px 8px;border-radius:20px;font-weight:600}
+.file .btn{justify-content:center}
+.file.off{opacity:.55}
+.row-actions{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:0;overflow-x:auto}
+.tab{padding:10px 14px;border:0;background:none;cursor:pointer;color:var(--ink-2);border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap}
+.tab.on{color:var(--ink);border-bottom-color:var(--brand);font-weight:600}
+.tab .n{font-size:11.5px;padding:1px 7px;border-radius:20px;background:var(--panel-2);margin-left:6px;color:var(--ink-2)}
+.pane{display:none;max-height:520px;overflow:auto}
+.pane.on{display:block}
+.item{display:flex;gap:12px;padding:11px 16px;border-bottom:1px solid var(--line);align-items:flex-start;font-size:14px}
+.item:last-child{border-bottom:0}
+.pill{font-size:11.5px;padding:2px 8px;border-radius:6px;white-space:nowrap;font-weight:600;flex:none}
+.pill.e{background:var(--err-soft);color:var(--err)} .pill.w{background:var(--warn-soft);color:var(--warn)} .pill.c{background:var(--info-soft);color:var(--info)}
+.campo{font-family:Consolas,monospace;font-size:12px;color:var(--ink-3)}
+.filas{font-size:12px;color:var(--ink-3);margin-top:2px}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th{text-align:left;font-weight:600;color:var(--ink-3);font-size:12px;text-transform:uppercase;letter-spacing:.03em;padding:10px 14px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--panel)}
+td{padding:10px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+td.num{font-variant-numeric:tabular-nums;text-align:right}
+.chip{display:inline-block;padding:1px 8px;margin:2px 4px 2px 0;border-radius:20px;background:var(--panel-2);border:1px solid var(--line);font-size:12.5px}
+.chip.new{border-style:dashed;color:var(--info)}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px}
+.empty{padding:28px;text-align:center;color:var(--ink-3)}
+dialog{border:1px solid var(--line);border-radius:var(--r);background:var(--panel);color:var(--ink);padding:0;width:min(560px,94vw);box-shadow:var(--shadow)}
+dialog::backdrop{background:rgba(0,0,0,.35)}
+.dh{padding:18px 20px 6px;display:flex;align-items:center}
+.dh h3{margin:0;font-size:17px;flex:1}
+.db{padding:6px 20px 8px}
+.db p.hint{color:var(--ink-2);font-size:13px;margin:0 0 14px}
+.fld{display:block;margin-bottom:12px}
+.fld span{display:block;font-size:12.5px;color:var(--ink-2);margin-bottom:4px}
+.fld input{width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:9px;background:var(--panel-2)}
+.fld input:focus{outline:2px solid var(--brand-soft);border-color:var(--brand)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.df{padding:12px 20px 18px;display:flex;justify-content:flex-end;gap:10px}
+#buscar{width:min(760px,94vw)}
+#q{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:9px;background:var(--panel-2);margin-bottom:10px}
+#qres{max-height:420px;overflow:auto}
+.x{border:0;background:none;cursor:pointer;color:var(--ink-3);font-size:20px;line-height:1}
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;opacity:0;transition:.2s;pointer-events:none;font-size:14px}
+.toast.on{opacity:1;transform:translateX(-50%)}
+footer{color:var(--ink-3);font-size:12.5px;text-align:center;margin-top:30px}
+@media (max-width:760px){
+  .steps,.dl{grid-template-columns:1fr}
+  .stats{grid-template-columns:repeat(3,1fr)}
+  .grid2{grid-template-columns:1fr}
+  header .lbl{display:none}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="logo">SWI</div>
+    <div><h1>BO SWI Generador</h1><small id="ver">Excel → Access · TXT · CSV para BackOffice</small></div>
+    <div class="sp"></div>
+    <button class="btn ghost" onclick="abrirBuscar()" title="Buscar códigos de sociedades y territorios">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span class="lbl">Códigos</span></button>
+    <button class="btn" onclick="abrirConfig()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M5 21V8l7-5 7 5v13M9 21v-6h6v6"/></svg><span class="lbl" id="miEd">Mi editorial</span></button>
+  </header>
+
+  <div class="steps">
+    <div class="card step"><b>1</b><p><strong>Llena la plantilla</strong><a onclick="bajarPlantilla()">Descargar plantilla Excel</a> con listas desplegables y ayudas.</p></div>
+    <div class="card step"><b>2</b><p><strong>Arrástrala aquí</strong>Reviso todas las reglas de la guía BO y corrijo lo que se puede corregir.</p></div>
+    <div class="card step"><b>3</b><p><strong>Descarga y sube a BO</strong>Recibes el archivo en Access (.mdb), TXT y CSV.</p></div>
+  </div>
+
+  <div id="drop" tabindex="0">
+    <div class="ico"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 16V4m0 0-4 4m4-4 4 4"/><path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></svg></div>
+    <h2>Arrastra tu Excel aquí</h2>
+    <p>o haz clic para elegirlo</p>
+    <div class="fmt">.xlsx · .xls · .csv (con comas o punto y coma, con o sin %)</div>
+    <input type="file" id="file" accept=".xlsx,.xlsm,.xls,.csv,.txt" hidden>
+  </div>
+  <div class="opts">
+    <label class="switch"><input type="checkbox" id="c100" checked><i></i>Completar con WRITER UNKNOWN cuando los autores no sumen 100%</label>
+  </div>
+
+  <div id="busy" class="card" style="margin-top:18px"><div class="spin"></div>Revisando y generando archivos…</div>
+
+  <section id="res">
+    <div id="banner" class="banner"></div>
+    <div class="stats">
+      <div class="card stat"><span>Obras</span><strong id="sObras">0</strong></div>
+      <div class="card stat"><span>Filas</span><strong id="sFilas">0</strong></div>
+      <div class="card stat c"><span>Correcciones</span><strong id="sCorr">0</strong></div>
+      <div class="card stat w"><span>Avisos</span><strong id="sAv">0</strong></div>
+      <div class="card stat e"><span>Errores</span><strong id="sErr">0</strong></div>
+    </div>
+    <div id="descargas"></div>
+    <div class="card">
+      <div class="tabs" id="tabs"></div>
+      <div id="panes"></div>
+    </div>
+  </section>
+
+  <footer>Todo se procesa en tu computador. Layout SWI v1.4 de BackOffice Music Services.</footer>
+</div>
+
+<dialog id="cfg">
+  <div class="dh"><h3>Mi editorial</h3><button class="x" onclick="cfg.close()">×</button></div>
+  <div class="db">
+    <p class="hint">Cuando en el Excel aparezca este nombre como editor original o local, completo automáticamente las columnas vacías de CAE, sociedades y país. Así no tienes que escribirlas en cada fila.</p>
+    <label class="fld"><span>Nombre del editor (tal como lo escribes en el Excel)</span><input id="fNombre" placeholder="EDIMUSICA"></label>
+    <div class="grid2">
+      <label class="fld"><span>CAE / IPI del editor</span><input id="fCae" placeholder="00000000000"></label>
+      <label class="fld"><span>País local (editor administrador)</span><input id="fTerr" list="dlPaises" placeholder="CO"></label>
+      <label class="fld"><span>Sociedad PR (ejecución)</span><input id="fPr" list="dlSoc" placeholder="84 - SAYCO"></label>
+      <label class="fld"><span>Sociedad MR (mecánicos)</span><input id="fMr" list="dlSoc" placeholder="opcional"></label>
+    </div>
+  </div>
+  <div class="df"><button class="btn" onclick="cfg.close()">Cancelar</button><button class="btn primary" onclick="guardarConfig()">Guardar</button></div>
+</dialog>
+
+<dialog id="buscar">
+  <div class="dh"><h3>Buscar códigos</h3><button class="x" onclick="buscar.close()">×</button></div>
+  <div class="db">
+    <input id="q" placeholder="Escribe una sociedad, país o código… (ej. sayco, colombia, 2WL)" oninput="filtrar()">
+    <div id="qres"></div>
+  </div>
+  <div class="df"></div>
+</dialog>
+
+<datalist id="dlSoc"></datalist>
+<datalist id="dlPaises"></datalist>
+<div class="toast" id="toast"></div>
+
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+let TABLAS = null, CFG = {}, ULTIMO = null;
+
+function toast(msg){ const t=$("#toast"); t.textContent=msg; t.classList.add("on"); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove("on"),2600); }
+
+async function init(){
+  CFG = await (await fetch("/api/config")).json();
+  $("#ver").textContent = "v" + CFG.version + " · Excel → Access · TXT · CSV para BackOffice";
+  $("#c100").checked = CFG.completar_100 !== false;
+  if (CFG.nombre) $("#miEd").textContent = CFG.nombre;
+  TABLAS = await (await fetch("/api/tablas")).json();
+  $("#dlSoc").innerHTML = TABLAS.sociedades.map(s=>`<option value="${s.codigo} - ${esc(s.nombre)}">${esc(s.pais)}</option>`).join("");
+  $("#dlPaises").innerHTML = TABLAS.territorios.filter(t=>t.tipo==="País").map(t=>`<option value="${t.codigo}">${esc(t.nombre)}</option>`).join("");
+  if (!CFG.nombre) setTimeout(()=>{ toast("Primero configura tu editorial (arriba a la derecha)"); }, 600);
+}
+
+// ---------- subida
+const drop = $("#drop"), inp = $("#file");
+drop.onclick = () => inp.click();
+drop.onkeydown = e => { if (e.key==="Enter"||e.key===" ") inp.click(); };
+inp.onchange = () => inp.files[0] && subir(inp.files[0]);
+["dragenter","dragover"].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add("over"); }));
+["dragleave","drop"].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove("over"); }));
+drop.addEventListener("drop", e => { const f = e.dataTransfer.files[0]; if (f) subir(f); });
+$("#c100").onchange = () => { CFG.completar_100 = $("#c100").checked; fetch("/api/config",{method:"POST",body:JSON.stringify(CFG)}); if (ULTIMO) subir(ULTIMO); };
+
+async function subir(f){
+  ULTIMO = f;
+  $("#res").style.display = "none"; $("#busy").style.display = "block";
+  try{
+    const r = await fetch("/api/procesar", {method:"POST", body:f, headers:{
+      "X-Filename": encodeURIComponent(f.name),
+      "X-Opciones": encodeURIComponent(JSON.stringify({completar_100: $("#c100").checked}))}});
+    const d = await r.json();
+    if (d.error) throw new Error(d.error);
+    pintar(d);
+  }catch(e){ pintar({ok:false, archivo:f.name, filas:0, obras:[], errores:[{fila:null,campo:null,msg:String(e.message||e)}], avisos:[], correcciones:[]}); }
+  finally{ $("#busy").style.display = "none"; inp.value = ""; }
+}
+
+// ---------- resultado
+const ICON_OK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="m5 12 5 5 9-10"/></svg>';
+const ICON_BAD = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M6 6l12 12M18 6 6 18"/></svg>';
+const FMT = {
+  mdb:{c:"#a4373a", t:"Access (.mdb)", p:"Tabla SWI. Formato recomendado por BO.", tag:"Recomendado"},
+  txt:{c:"#5b5fc7", t:"Texto (.txt)", p:"Ancho fijo, codificación ANSI, 1013 caracteres por línea."},
+  csv:{c:"#217346", t:"CSV (.csv)", p:"UTF-8 delimitado por comas, como lo pide BO."},
+};
+
+function pintar(d){
+  $("#res").style.display = "block";
+  $("#sObras").textContent = d.obras.length; $("#sFilas").textContent = d.filas;
+  $("#sCorr").textContent = d.correcciones.length; $("#sAv").textContent = d.avisos.length; $("#sErr").textContent = d.errores.length;
+  const b = $("#banner");
+  if (d.ok){
+    b.className = "banner ok";
+    b.innerHTML = `<div class="big">${ICON_OK}</div><div><h3>Listo para subir a BO</h3><p>${esc(d.archivo)} pasó todas las reglas de la guía SWI.${d.correcciones.length?` Hice ${d.correcciones.length} correcciones automáticas (revísalas abajo).`:""}</p></div>`;
+  } else {
+    b.className = "banner bad";
+    b.innerHTML = `<div class="big">${ICON_BAD}</div><div><h3>${d.errores.length} ${d.errores.length===1?"error":"errores"} que BO va a rechazar</h3><p>Corrígelos en tu Excel y vuelve a arrastrarlo. No generé archivos para que no subas uno malo.</p></div>`;
+  }
+  // descargas
+  const dl = $("#descargas");
+  if (d.ok){
+    const por = {}; d.descargas.forEach(x => por[x.nombre.split(".").pop()] = x);
+    dl.innerHTML = `<div class="dl">${["mdb","txt","csv"].map(k => {
+      const f = FMT[k], x = por[k];
+      if (!x) return `<div class="card file off"><div class="ext" style="background:${f.c}">${k.toUpperCase()}</div><h4>${f.t}</h4><p>No se pudo generar: ${esc(d.mdb_error||"")}</p></div>`;
+      return `<div class="card file">${f.tag?`<span class="tag">${f.tag}</span>`:""}<div class="ext" style="background:${f.c}">${k.toUpperCase()}</div><h4>${f.t}</h4><p>${f.p}</p>
+        <a class="btn primary" href="/api/descargar/${d.job}/${encodeURIComponent(x.nombre)}">Descargar</a></div>`;
+    }).join("")}</div>
+    <div class="row-actions">
+      <a class="btn" href="/api/descargar/${d.job}/todo.zip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 4v12m0 0-4-4m4 4 4-4M4 20h16"/></svg>Descargar todo (.zip)</a>
+      <button class="btn" onclick="fetch('/api/abrir/${d.job}',{method:'POST'})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>Abrir carpeta</button>
+    </div>`;
+  } else dl.innerHTML = "";
+
+  // pestañas
+  const tabs = [];
+  if (d.errores.length) tabs.push(["Errores", d.errores.length, lista(d.errores, "e", "Error")]);
+  tabs.push(["Obras", d.obras.length, tablaObras(d.obras)]);
+  tabs.push(["Correcciones", d.correcciones.length, lista(d.correcciones, "c", "Corregido")]);
+  tabs.push(["Avisos", d.avisos.length, lista(d.avisos, "w", "Aviso")]);
+  $("#tabs").innerHTML = tabs.map((t,i)=>`<button class="tab${i?"":" on"}" data-i="${i}">${t[0]}<span class="n">${t[1]}</span></button>`).join("");
+  $("#panes").innerHTML = tabs.map((t,i)=>`<div class="pane${i?"":" on"}">${t[2]}</div>`).join("");
+  document.querySelectorAll(".tab").forEach(el => el.onclick = () => {
+    document.querySelectorAll(".tab,.pane").forEach(x=>x.classList.remove("on"));
+    el.classList.add("on"); document.querySelectorAll(".pane")[el.dataset.i].classList.add("on");
+  });
+  $("#res").scrollIntoView({behavior:"smooth", block:"start"});
+}
+
+function lista(items, tipo, etiqueta){
+  if (!items.length) return `<div class="empty">Nada por aquí 👌</div>`;
+  // agrupa mensajes iguales para no repetir 60 veces lo mismo
+  const g = new Map();
+  items.forEach(x => { const k = (x.campo||"")+"|"+x.msg; if(!g.has(k)) g.set(k,{...x, filas:[]}); if (x.fila) g.get(k).filas.push(x.fila); });
+  return [...g.values()].map(x => `<div class="item"><span class="pill ${tipo}">${etiqueta}</span><div>
+    <div>${esc(x.msg)}</div>
+    <div class="filas">${x.campo?`<span class="campo">${esc(x.campo)}</span> · `:""}${x.filas.length?(x.filas.length>1?"Filas ":"Fila ")+resumirFilas(x.filas):"Archivo"}</div></div></div>`).join("");
+}
+function resumirFilas(f){ f=[...new Set(f)].sort((a,b)=>a-b); return f.length>12 ? f.slice(0,12).join(", ")+` y ${f.length-12} más` : f.join(", "); }
+
+function tablaObras(obras){
+  if (!obras.length) return `<div class="empty">Sin obras</div>`;
+  return `<table><thead><tr><th>Código</th><th>Título</th><th>Autores</th><th style="text-align:right">Total</th><th>Estado</th></tr></thead><tbody>${
+    obras.map(o => {
+      const est = o.error ? `<span class="dot" style="background:var(--err)"></span>Revisar` :
+                  o.agregado ? `<span class="dot" style="background:var(--info)"></span>Completada` :
+                  `<span class="dot" style="background:var(--ok)"></span>OK`;
+      return `<tr><td class="campo">${esc(o.codigo)}</td><td>${esc(o.titulo)}<div class="filas">${esc(o.interprete)}</div></td>
+      <td>${o.autores.map(a=>`<span class="chip${a.nuevo?" new":""}" title="${esc(a.editor)}">${esc(a.nombre)} · ${a.pct}%</span>`).join("")}</td>
+      <td class="num">${o.total}%</td><td style="white-space:nowrap">${est}</td></tr>`;
+    }).join("")}</tbody></table>`;
+}
+
+// ---------- plantilla
+function bajarPlantilla(){ location.href = "/api/plantilla"; }
+
+// ---------- configuracion
+const cfg = $("#cfg"), buscar = $("#buscar");
+function socTxt(c){ const s = TABLAS && TABLAS.sociedades.find(x=>x.codigo===String(c)); return s ? `${s.codigo} - ${s.nombre}` : (c||""); }
+function abrirConfig(){
+  $("#fNombre").value = CFG.nombre||""; $("#fCae").value = CFG.cae||""; $("#fTerr").value = CFG.territorio||"CO";
+  $("#fPr").value = socTxt(CFG.pr_soc); $("#fMr").value = socTxt(CFG.mr_soc);
+  cfg.showModal();
+}
+async function guardarConfig(){
+  const cod = v => (v.match(/^\s*(\d+)/)||[])[1] || v.trim();
+  const terr = $("#fTerr").value.trim().toUpperCase().split(/[\s-]/)[0];
+  if (terr && !TABLAS.territorios.some(t=>t.tipo==="País" && t.codigo===terr)) { toast("El país local debe ser un código de país válido (ej. CO)"); return; }
+  for (const id of ["#fPr","#fMr"]) { const c = cod($(id).value); if (c && !TABLAS.sociedades.some(s=>s.codigo===c)) { toast("Sociedad no válida: " + $(id).value); return; } }
+  CFG = await (await fetch("/api/config",{method:"POST", body:JSON.stringify({
+    nombre: $("#fNombre").value.trim().toUpperCase(), cae: $("#fCae").value.trim(),
+    pr_soc: cod($("#fPr").value), mr_soc: cod($("#fMr").value), territorio: terr, completar_100: $("#c100").checked})})).json();
+  $("#miEd").textContent = CFG.nombre || "Mi editorial";
+  cfg.close(); toast("Guardado"); if (ULTIMO) subir(ULTIMO);
+}
+
+// ---------- buscador de codigos
+function abrirBuscar(){ buscar.showModal(); $("#q").value=""; filtrar(); $("#q").focus(); }
+function filtrar(){
+  const q = $("#q").value.trim().toLowerCase();
+  const m = x => !q || Object.values(x).some(v => String(v).toLowerCase().includes(q));
+  const soc = TABLAS.sociedades.filter(m).slice(0,40), ter = TABLAS.territorios.filter(m).slice(0,40), rol = TABLAS.roles.filter(m);
+  const sec = (t, filas, cols) => filas.length ? `<table><thead><tr><th colspan="3">${t}</th></tr></thead><tbody>${filas.map(f=>`<tr>${cols.map(c=>`<td${c==="codigo"?' class="campo"':''}>${esc(f[c])}</td>`).join("")}</tr>`).join("")}</tbody></table>` : "";
+  $("#qres").innerHTML = (sec("Sociedades", soc, ["codigo","nombre","pais"]) + sec("Territorios", ter, ["codigo","nombre","tipo"]) + sec("Roles", rol, ["codigo","nombre"])) || `<div class="empty">Sin resultados</div>`;
+}
+
+init();
+</script>
+</body>
+</html>
